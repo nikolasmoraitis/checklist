@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ethical Self-Assessment Checklist</title>
+<style>
+  :root{
+    --brand:#0b2e63;
+    --brand-2:#134a9a;
+    --bg:#f9fafc;
+    --card:#fff;
+    --line:#e5e7eb;
+    --text:#111827;
+    --muted:#4b5563;
+    --low:#22c55e;
+    --moderate:#f59e0b;
+    --high:#f97316;
+    --critical:#ef4444;
+    --low-bg:#ecfdf5;
+    --mod-bg:#fffbeb;
+    --high-bg:#fff7ed;
+    --crit-bg:#fef2f2;
+  }
+  *{box-sizing:border-box}
+  body{font-family:Arial,Helvetica,sans-serif;background:var(--bg);margin:20px;color:var(--text)}
+  h1{color:var(--brand);margin:0 0 8px}
+  .lead{margin:0 0 14px;color:var(--muted)}
+  .meta{color:var(--muted);font-size:14px;margin:0 0 16px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 0}
+  .section{background:var(--card);padding:16px;margin:16px 0;border-radius:10px;border:1px solid #ddd;position:relative;break-inside:avoid}
+  .section h2{margin-top:0;color:var(--brand);display:flex;align-items:center;gap:10px}
+  fieldset{border:none;margin:12px 0 14px;padding:0}
+  legend{font-weight:bold;margin-bottom:6px;display:block}
+  textarea{width:100%;min-height:92px;padding:8px;border:1px solid #ccc;border-radius:6px;resize:vertical}
+  .row{display:grid;grid-template-columns:1fr 260px 260px;gap:10px;align-items:start}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;background:#f3f4f6;border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+  .pill label{font-size:12px;color:var(--muted)}
+  select{padding:6px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;min-width:180px}
+  .score-help{font-size:12px;color:var(--muted)}
+  .controls .score{min-width:240px}
+  button{background:var(--brand);color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer}
+  button:hover{background:var(--brand-2)}
+  .secondary{background:#4b5563}
+  .results{background:var(--brand);color:#fff;padding:16px;border-radius:10px;margin-top:20px}
+  .results h2,.results h3{margin-top:0}
+  .results ul{list-style:none;padding:0;margin:0}
+  .results li{margin:6px 0;padding:6px;border-bottom:1px solid rgba(255,255,255,.35)}
+  .matrix{border-collapse:collapse;margin-top:12px;width:100%;max-width:520px;background:#fff;border-radius:8px;overflow:hidden}
+  .matrix th,.matrix td{border:1px solid #e5e7eb;padding:10px;text-align:center;font-size:14px;color:#111;font-weight:600}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:bold}
+  .risk-low{background:var(--low);color:#062a10}
+  .risk-mod{background:var(--moderate);color:#3f1f02}
+  .risk-high{background:var(--high);color:#3b1603}
+  .risk-critical{background:var(--critical);color:#fff}
+  /* Section coloring by worst risk */
+  .sec-low{border-left:8px solid var(--low);background:var(--low-bg)}
+  .sec-mod{border-left:8px solid var(--moderate);background:var(--mod-bg)}
+  .sec-high{border-left:8px solid var(--high);background:var(--high-bg)}
+  .sec-critical{border-left:8px solid var(--critical);background:var(--crit-bg)}
+  /* Print styles */
+  @media print{
+    body{background:#fff;margin:10mm;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .toolbar,.results button{display:none!important}
+    .section{page-break-inside:avoid}
+    a[href]:after{content:""}
+  }
+  /* Legend colors (dark text on light bg) */
+  .matrix .risk-low{background:var(--low-bg)!important;color:#111!important}
+  .matrix .risk-mod{background:var(--mod-bg)!important;color:#111!important}
+  .matrix .risk-high{background:var(--high-bg)!important;color:#111!important}
+  .matrix .risk-critical{background:var(--crit-bg)!important;color:#111!important}
+</style>
+</head>
+<body>
+<h1>Ethical Self-Assessment Checklist</h1>
+<p class="lead">
+  This tool enables organizations to evaluate AI systems against ethical, legal, and gender-inclusive standards, ensuring responsible design, deployment, and monitoring.
+</p>
+
+<p class="meta"><strong>3.5 ETHICAL SELF-ASSESSMENT CHECKLIST</strong> — Per question select a score:
+  <em>0 = Not evident / absent</em>, <em>1 = Partially addressed / informal</em>,
+  <em>2 = Documented and implemented</em>, <em>3 = Fully embedded, reviewed, and continuously improved</em>.
+  Also estimate <em>Likelihood</em> and <em>Severity</em>; the color-coded matrix maps to overall risk. Phases: Phase I (Design & Development), Phase II (Deployment & Operationalization), Phase III (Monitoring & Continuous Post-Market Improvement).
+</p>
+
+<form id="form">
+  <div id="sections"></div>
+</form>
+
+<div class="toolbar">
+  <button type="button" onclick="calculateScores()">Calculate Scores</button>
+  <button type="button" class="secondary" onclick="exportPDF()">Export to PDF</button>
+</div>
+
+<div class="results" id="results" style="display:none;"></div>
+
+<script>
+/* ========================= SECTIONS & QUESTIONS ========================= */
+const SECTIONS = [
+  /* Phase I */
+  {
+    key: "Phase I — Design & Development — 1) Intended Use and Proportionality",
+    questions: [
+      "To what extent are the objectives and intended uses of the AI system clearly defined and documented within your project or institution?",
+      "To what degree were potential harms to fundamental rights, society, or the environment systematically identified?",
+      "How effectively are risks of misuse, dual-use, or adversarial applications anticipated and mitigated?",
+      "To what extent does the proportionality assessment compare expected benefits to potential harms?",
+      "To what degree are environmental and sustainability impacts integrated into benefit–harm assessments?",
+      "To what extent did stakeholders (users, domain experts, civil society) contribute to identifying benefits and harms?",
+      "To what degree are downstream or long-term impacts (economic, psychological, environmental, or cultural) evaluated and addressed after the project concludes?",
+      "To what extent do institutional mechanisms ensure accountability for identified risks and benefits?",
+      "To what degree are tensions between ethical principles (e.g., transparency vs. confidentiality) identified, balanced, and justified?",
+      "To what extent are risk assessments documented, reviewed, and updated over time?"
+    ]
+  },
+  {
+    key: "Phase I — Design & Development — 2) Fairness & Non-Discrimination",
+    questions: [
+      "To what extent are methods used to detect bias in datasets, algorithms, or system outputs rigorous and validated?",
+      "How effectively are mitigation strategies for identified biases designed, implemented, and evaluated?",
+      "To what degree is fairness operationalized in your project or institutional framework (criteria, definitions, metrics)?",
+      "To what extent is fairness tested across demographic groups, including vulnerable populations?",
+      "To what degree is accessibility for persons with disabilities embedded in system design and evaluation?",
+      "To what extent are intersectional categories (e.g., race × gender × age) considered in fairness assessments?",
+      "How effectively are fairness concerns raised by affected communities incorporated into system improvements?",
+      "To what degree do institutional mechanisms ensure accountability for fairness outcomes and governance of bias issues?",
+      "To what extent are conflicts between fairness objectives and other ethical principles (e.g., accuracy or privacy) identified and addressed?",
+      "To what degree is fairness continuously monitored and documented throughout the AI lifecycle?"
+    ]
+  },
+  {
+    key: "Phase I — Design & Development — 3) Human Oversight",
+    questions: [
+      "To what extent are the ethical principles guiding the project clearly defined and justified?",
+      "To what degree are these principles embedded in the design process and documentation?",
+      "How robust is the governance framework (e.g., ethics committee, oversight board) ensuring accountability?",
+      "To what extent are stakeholders consulted to identify ethical concerns during design?",
+      "How clearly and reliably is human oversight integrated (approval, override, review mechanisms)?",
+      "To what degree are roles and responsibilities for ethical compliance clearly assigned and tracked within your institution?",
+      "To what extent are ethical dilemmas documented, discussed, and resolved during design?",
+      "To what degree are tensions between ethical principles (e.g., autonomy vs. protection) balanced and justified?",
+      "To what extent are staff trained and supported to identify and manage ethical issues in development?",
+      "To what degree are ethical guidelines and oversight practices reviewed and updated as risks or norms evolve?"
+    ]
+  },
+  {
+    key: "Phase I — Design & Development — 4) Gender Inclusivity",
+    questions: [
+      "To what extent has a gender audit been conducted on datasets, algorithms, and workflows?",
+      "How effectively are gender stereotypes identified and mitigated in outputs, interfaces, or communications?",
+      "To what degree are underrepresented genders meaningfully included in design and testing processes?",
+      "To what extent are performance metrics disaggregated by gender and intersecting identities?",
+      "To what degree is gender-sensitive methodology integrated into research and design?",
+      "To what extent do institutional mechanisms ensure structural accountability for gender inclusion and equity in governance?",
+      "To what degree is inclusive and gender-sensitive language ensured in documentation and interfaces?",
+      "To what extent are gender-differentiated impacts identified and addressed, including post-project consequences?",
+      "To what degree are intersections or conflicts between gender inclusivity and other fairness or privacy goals managed and justified?",
+      "To what extent is an inclusive and equitable team culture promoted, tracked, and documented?"
+    ]
+  },
+
+  /* Phase II */
+  {
+    key: "Phase II — Deployment & Operationalization — 5) Transparency",
+    questions: [
+      "To what extent is the AI system’s functioning (data sources, models, intended use, limitations) documented and communicated within your institution or programme?",
+      "To what degree are end-users clearly informed that they are interacting with an AI system?",
+      "How effectively are explanations tailored for different audiences (technical experts, lay users, regulators)?",
+      "To what extent are explainability techniques validated and reliable?",
+      "To what degree are uncertainties, limitations, and error rates transparently communicated?",
+      "To what extent are transparency obligations under applicable laws identified and monitored?",
+      "To what degree are decision logs and audit trails maintained to ensure accountability?",
+      "To what extent are trade-offs between transparency and IP/confidentiality justified and documented?",
+      "To what degree is transparency ensured when the system is updated or retrained?",
+      "To what extent are institutional communication plans reviewed and improved to maintain transparency?"
+    ]
+  },
+  {
+    key: "Phase II — Deployment & Operationalization — 6) Accountability",
+    questions: [
+      "To what extent are accountability roles and responsibilities clearly defined and assigned within your institution?",
+      "To what degree do internal processes review accountability and ethics before deployment?",
+      "How effective and accessible are grievance mechanisms allowing individuals to contest or appeal AI decisions?",
+      "To what extent are accountability responsibilities communicated and audited across organizational levels?",
+      "To what degree are impact assessments conducted to ensure responsible deployment?",
+      "To what extent are incidents, failures, or breaches documented and communicated transparently?",
+      "To what degree are tensions between accountability and confidentiality (e.g., whistleblowing or data disclosure) addressed and justified?",
+      "To what extent is third-party compliance with accountability requirements verified and enforced?",
+      "To what degree is staff training on accountability and ethical responsibility maintained and updated?",
+      "To what extent are accountability frameworks reviewed and improved after project completion?"
+    ]
+  },
+  {
+    key: "Phase II — Deployment & Operationalization — 7) Legal Compliance",
+    questions: [
+      "To what extent is data minimization achieved in training and deployment?",
+      "To what degree are anonymization, pseudonymization, or encryption measures effectively implemented for sensitive data?",
+      "To what extent is user consent obtained, communicated, and managed consistently?",
+      "To what degree are users’ rights to access, rectification, or deletion of data operationalized and respected?",
+      "To what extent are compliance requirements from the GDPR, AI Act, and Data Act identified, mapped, and integrated into institutional governance strategies?",
+      "To what degree are risks from third-party data sources and integrations assessed and mitigated?",
+      "To what extent are conflicts between legal compliance requirements and other ethical principles (e.g., transparency or fairness) resolved and justified?",
+      "To what degree are safeguards against misuse or unauthorized access documented, tested, and verified?",
+      "To what extent are institutional compliance systems monitored or externally audited for robustness?",
+      "To what degree are compliance practices adapted and sustained beyond the project lifecycle?"
+    ]
+  },
+
+  /* Phase III */
+  {
+    key: "Phase III — Monitoring & Continuous Post-Market Improvement — 8) Deployment, Harm Detection & Monitoring",
+    questions: [
+      "To what extent are early-warning mechanisms for harm detection established at the institutional or project level?",
+      "To what degree are early-warning mechanisms tested, validated, and refined in practice?",
+      "To what extent was real-world pilot testing conducted and evaluated before full deployment?",
+      "To what degree are user feedback and harm reports systematically collected, recorded, and acted upon?",
+      "To what extent are periodic risk reassessments performed and documented?",
+      "To what degree are correction and mitigation strategies predefined and effectively implemented when harms are detected?",
+      "To what extent are monitoring results used to improve conformity with ethical and legal standards?",
+      "To what degree are trade-offs between harm mitigation and operational efficiency evaluated and justified?",
+      "To what extent are institutional accountability and reporting mechanisms maintained for harm detection and response?",
+      "To what degree are long-term accountability and ethical exit or phase-out strategies planned after system decommissioning?"
+    ]
+  },
+  {
+    key: "Phase III — Monitoring & Continuous Post-Market Improvement — 9) Sustainability & Continuous Improvement",
+    questions: [
+      "To what extent is a structured feedback loop maintained for continuous evaluation of ethical and social impacts?",
+      "To what degree are monitoring results systematically reviewed and translated into system improvements?",
+      "To what extent are marginalized or underrepresented groups meaningfully included in governance and decision-making?",
+      "To what degree is stakeholder input integrated into institutional governance beyond advisory roles?",
+      "To what extent are long-term ethical, social, and gender-related consequences evaluated beyond the project’s duration?",
+      "To what degree are trade-offs between sustainability goals and economic or operational priorities evaluated and justified?",
+      "To what extent are ethics and inclusivity training updated and delivered to staff?",
+      "To what degree are governance mechanisms adapted in response to evolving regulations and social expectations?",
+      "To what extent is accountability for continuous ethical oversight clearly defined within your institution?",
+      "To what degree are sustainability and improvement activities documented for institutional learning and transparency?"
+    ]
+  }
+];
+
+/* ======================= RISK & SCORING ======================= */
+const RISK_MAP = {
+  L: { L:{label:'Low Risk', cls:'risk-low', weight:1},
+       M:{label:'Moderate Risk', cls:'risk-mod', weight:2},
+       H:{label:'Moderate Risk', cls:'risk-mod', weight:2} },
+  M: { L:{label:'Moderate Risk', cls:'risk-mod', weight:2},
+       M:{label:'Moderate Risk', cls:'risk-mod', weight:2},
+       H:{label:'High Risk', cls:'risk-high', weight:3} },
+  H: { L:{label:'Moderate Risk', cls:'risk-mod', weight:2},
+       M:{label:'High Risk', cls:'risk-high', weight:3},
+       H:{label:'Critical Risk', cls:'risk-critical', weight:4} }
+};
+const SEC_CLASS_BY_WEIGHT = {1:'sec-low', 2:'sec-mod', 3:'sec-high', 4:'sec-critical'};
+
+(function buildForm(){
+  const mount = document.getElementById('sections');
+  let globalIndex = 0;
+
+  SECTIONS.forEach((sec, sIdx) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'section';
+    wrapper.dataset.key = sec.key;
+    wrapper.dataset.max = sec.questions.length;
+
+    const h2 = document.createElement('h2');
+    h2.innerHTML = `${sIdx+1}. ${sec.key} <span class="badge" data-badge></span>`;
+    wrapper.appendChild(h2);
+
+    sec.questions.forEach((q, i) => {
+      globalIndex += 1;
+      const fs = document.createElement('fieldset');
+
+      const lg = document.createElement('legend');
+      lg.textContent = `${i+1}) ${q}`;
+      fs.appendChild(lg);
+
+      const row = document.createElement('div');
+      row.className = 'row';
+
+      const ta = document.createElement('textarea');
+      ta.name = `q${globalIndex}`;
+      ta.placeholder = "Type your answer...";
+      row.appendChild(ta);
+
+      const controls = document.createElement('div');
+      controls.className = 'controls';
+
+      const pillScore = document.createElement('div');
+      pillScore.className = 'pill';
+      pillScore.innerHTML = `
+        <label>Score (0–3)</label>
+        <select class="score" name="s${globalIndex}">
+          <option value="">—</option>
+          <option value="0">0 — Not evident / absent</option>
+          <option value="1">1 — Partially addressed / informal</option>
+          <option value="2">2 — Documented and implemented</option>
+          <option value="3">3 — Fully embedded, reviewed, & continuously improved</option>
+        </select>`;
+      controls.appendChild(pillScore);
+
+      const pillLik = document.createElement('div');
+      pillLik.className = 'pill';
+      pillLik.innerHTML = `
+        <label>Likelihood</label>
+        <select name="l${globalIndex}">
+          <option value="">—</option>
+          <option value="L">Low</option>
+          <option value="M">Medium</option>
+          <option value="H">High</option>
+        </select>`;
+      controls.appendChild(pillLik);
+
+      const pillSev = document.createElement('div');
+      pillSev.className = 'pill';
+      pillSev.innerHTML = `
+        <label>Severity</label>
+        <select name="v${globalIndex}">
+          <option value="">—</option>
+          <option value="L">Low</option>
+          <option value="M">Medium</option>
+          <option value="H">High</option>
+        </select>`;
+      controls.appendChild(pillSev);
+
+      row.appendChild(controls);
+      fs.appendChild(row);
+
+      if(i === 0){
+        const hint = document.createElement('div');
+        hint.className = 'score-help';
+        hint.textContent = 'Rubric: 3 = fully embedded & continuously improved; 2 = documented & implemented; 1 = partially / informal; 0 = absent.';
+        fs.appendChild(hint);
+      }
+
+      wrapper.appendChild(fs);
+    });
+
+    mount.appendChild(wrapper);
+  });
+})();
+
+function riskCell(lik, sev){
+  if(!lik || !sev) return {label:'—', cls:'', weight:0};
+  return (RISK_MAP[lik] && RISK_MAP[lik][sev]) ? RISK_MAP[lik][sev] : {label:'—', cls:'', weight:0};
+}
+
+function calculateScores(){
+  const results = {};
+  let grandScore = 0, grandMax = 0;
+  let riskCounts = { low:0, mod:0, high:0, critical:0, missing:0 };
+
+  document.querySelectorAll(".section").forEach(section => {
+    const key = section.dataset.key;
+    const qMax = parseInt(section.dataset.max,10) || 0;
+
+    const scores = Array.from(section.querySelectorAll("select.score"))
+      .map(sel => parseInt(sel.value,10))
+      .filter(v => !isNaN(v));
+
+    const sectionScore = scores.reduce((a,b)=>a+b,0);
+    const sectionMax = qMax * 3;
+    results[key] = { score: sectionScore, max: sectionMax };
+    grandScore += sectionScore;
+    grandMax   += sectionMax;
+
+    let worstWeight = 0, worstLabel = '—', worstCls = '';
+    section.querySelectorAll("fieldset").forEach((fs) => {
+      const likSel = fs.querySelector(`select[name^="l"]`);
+      const sevSel = fs.querySelector(`select[name^="v"]`);
+      const lik = likSel ? likSel.value : '';
+      const sev = sevSel ? sevSel.value : '';
+      const cell = riskCell(lik, sev);
+
+      if(cell.weight > worstWeight){ worstWeight = cell.weight; worstLabel = cell.label; worstCls = cell.cls; }
+
+      if(cell.cls==='risk-low') riskCounts.low++;
+      else if(cell.cls==='risk-mod') riskCounts.mod++;
+      else if(cell.cls==='risk-high') riskCounts.high++;
+      else if(cell.cls==='risk-critical') riskCounts.critical++;
+      else riskCounts.missing++;
+
+      let badge = fs.querySelector('.badge');
+      if(!badge){
+        badge = document.createElement('span');
+        badge.className = 'badge';
+        fs.appendChild(badge);
+      }
+      badge.className = 'badge ' + (cell.cls || '');
+      badge.textContent = cell.label || '—';
+    });
+
+    section.classList.remove('sec-low','sec-mod','sec-high','sec-critical');
+    if(worstWeight>0){ section.classList.add(SEC_CLASS_BY_WEIGHT[worstWeight]); }
+
+    const headerBadge = section.querySelector('[data-badge]');
+    if(headerBadge){
+      headerBadge.className = 'badge ' + (worstCls || '');
+      headerBadge.textContent = worstLabel || '—';
+      headerBadge.style.display = worstLabel && worstLabel!=='—' ? 'inline-block' : 'none';
+    }
+  });
+
+  let html = "<h2>Results</h2><ul>";
+  Object.entries(results).forEach(([k,v])=>{
+    const pct = v.max ? Math.round((v.score/v.max)*100) : 0;
+    html += `<li><strong>${k}:</strong> ${v.score} / ${v.max} (${pct}%)</li>`;
+  });
+  const totalPct = grandMax ? Math.round((grandScore/grandMax)*100) : 0;
+  html += `</ul><h3>Total Score: ${grandScore} / ${grandMax} (${totalPct}%)</h3>`;
+
+  html += `<h3>Risk Distribution</h3>
+  <ul>
+    <li><span class="badge risk-low">Low</span> ${riskCounts.low}</li>
+    <li><span class="badge risk-mod">Moderate</span> ${riskCounts.mod}</li>
+    <li><span class="badge risk-high">High</span> ${riskCounts.high}</li>
+    <li><span class="badge risk-critical">Critical</span> ${riskCounts.critical}</li>
+    <li>Missing/Unrated: ${riskCounts.missing}</li>
+  </ul>`;
+
+  html += `
+  <table class="matrix">
+    <tr><th rowspan="2">Severity</th><th colspan="3">Likelihood</th></tr>
+    <tr><th>Low</th><th>Medium</th><th>High</th></tr>
+    <tr><th>High</th><td class="risk-mod">Moderate</td><td class="risk-high">High</td><td class="risk-critical">Critical</td></tr>
+    <tr><th>Medium</th><td class="risk-low">Low</td><td class="risk-mod">Moderate</td><td class="risk-high">High</td></tr>
+    <tr><th>Low</th><td class="risk-low">Low</td><td class="risk-mod">Moderate</td><td class="risk-mod">Moderate</td></tr>
+  </table>`;
+
+  const box = document.getElementById("results");
+  box.innerHTML = html;
+  box.style.display = "block";
+  box.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+/* ========================== EXPORT TO PDF ========================== */
+function exportPDF(){
+  calculateScores();
+  window.print();
+}
+</script>
+</body>
+</html>
